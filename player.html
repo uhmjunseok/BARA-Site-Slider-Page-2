@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BARA Micro Player</title>
+
+<style>
+:root{--vh:1vh;--bara-border:rgba(0,0,0,.12)}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+.wrap{height:calc(var(--vh)*100);background:transparent;overflow:hidden;overflow-anchor:none}
+
+.v-root{
+  width:100%;
+  background:transparent;
+  overflow:hidden;
+  overflow-anchor:none;
+  height:800px; /* JS overwrite */
+}
+
+.v-track{
+  height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+
+  scroll-snap-type:y mandatory;
+  scroll-snap-stop:always;
+
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+
+  overflow-anchor:none;
+  scroll-behavior:auto;
+}
+
+.v-slide{
+  height:100%;
+  scroll-snap-align:start;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-anchor:none;
+}
+
+.yt-frame{
+  width:100%;
+  max-width:100%;
+  aspect-ratio:16/9;
+  max-height:100%;
+  height:auto;
+
+  position:relative;
+  overflow:hidden;
+  cursor:pointer;
+
+  border:1px solid var(--bara-border);
+  background:transparent;
+  box-sizing:border-box;
+
+  overflow-anchor:none;
+}
+
+.yt-frame img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  display:block;
+}
+
+.yt-frame.is-playing img{opacity:0}
+.yt-frame iframe{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  border:0;background:#000;
+}
+</style>
+</head>
+
+<body>
+<div class="wrap" data-bara="micro-player">
+  <div class="v-root">
+    <div class="v-track" aria-label="BARA Vertical Stack">
+
+      <section class="v-slide">
+        <div class="yt-frame"
+          data-video="DRPC2Ba7i7E"
+          data-index="0"
+          data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739880/MICROCOSM_I_RHYTHM_%EB%B3%B5%EC%82%AC_sfdoka.jpg"
+          role="button" tabindex="0">
+          <img src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739880/MICROCOSM_I_RHYTHM_%EB%B3%B5%EC%82%AC_sfdoka.jpg" alt="">
+        </div>
+      </section>
+
+      <section class="v-slide">
+        <div class="yt-frame"
+          data-video="Rp0HBSVz4hg"
+          data-index="1"
+          data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739848/MICROCOSM_I_RHYTHM_Web_vr_%EB%B3%B5%EC%82%AC_zai26j.jpg"
+          role="button" tabindex="0">
+          <img src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739848/MICROCOSM_I_RHYTHM_Web_vr_%EB%B3%B5%EC%82%AC_zai26j.jpg" alt="">
+        </div>
+      </section>
+
+      <section class="v-slide">
+        <div class="yt-frame"
+          data-video="EBvlq_t6CHA"
+          data-index="2"
+          data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739868/MICROCOSM_III_SPREAD_Web_vr_%EB%B3%B5%EC%82%AC_vqxm6c.jpg"
+          role="button" tabindex="0">
+          <img src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739868/MICROCOSM_III_SPREAD_Web_vr_%EB%B3%B5%EC%82%AC_vqxm6c.jpg" alt="">
+        </div>
+      </section>
+
+      <section class="v-slide">
+        <div class="yt-frame"
+          data-video="TldWk1-rzIA"
+          data-index="3"
+          data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739919/Sequence_01_1_%EB%B3%B5%EC%82%AC2_n6jsnn.jpg"
+          role="button" tabindex="0">
+          <img src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739919/Sequence_01_1_%EB%B3%B5%EC%82%AC2_n6jsnn.jpg" alt="">
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const root  = document.querySelector('[data-bara="micro-player"]');
+  if (!root) return;
+
+  const vRoot = root.querySelector('.v-root');
+  const track = root.querySelector('.v-track');
+
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(e){}
+
+  function lockHeightOnce(){
+    const h = (window.visualViewport && window.visualViewport.height)
+      ? Math.round(window.visualViewport.height)
+      : Math.round(window.innerHeight);
+    vRoot.style.height = h + 'px';
+    document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+  }
+
+  function forceTop(){
+    try { window.scrollTo(0,0); } catch(e){}
+    try { document.documentElement.scrollTop = 0; } catch(e){}
+    try { document.body.scrollTop = 0; } catch(e){}
+    if (track) track.scrollTop = 0;
+  }
+
+  lockHeightOnce();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    forceTop();
+    setTimeout(forceTop, 60);
+    setTimeout(forceTop, 180);
+  }));
+
+  function notify(frame){
+    const msg = {
+      type: 'BARA_MICRO_SELECT',
+      videoId: frame.dataset.video || '',
+      index: Number(frame.dataset.index || 0)
+    };
+    try { window.top.postMessage(msg, '*'); } catch(e){}
+  }
+
+  function restore(frame){
+    frame.classList.remove('is-playing');
+    frame.innerHTML = `<img src="${frame.dataset.thumb}" alt="">`;
+  }
+
+  function stopOthers(active){
+    root.querySelectorAll('.yt-frame').forEach(f=>{
+      if (f !== active && f.querySelector('iframe')) restore(f);
+    });
+  }
+
+  function play(frame){
+    if (frame.querySelector('iframe')) return;
+    stopOthers(frame);
+    frame.classList.add('is-playing');
+    frame.insertAdjacentHTML('beforeend', `
+      <iframe
+        src="https://www.youtube.com/embed/${frame.dataset.video}?autoplay=1&playsinline=1&rel=0"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowfullscreen>
+      </iframe>
+    `);
+  }
+
+  root.addEventListener('click', (e)=>{
+    const frame = e.target.closest('.yt-frame');
+    if (!frame) return;
+    play(frame);
+    notify(frame);
+  }, true);
+
+  // 최초 상태 텍스트 세팅용 (첫 슬라이드 기준)
+  const first = root.querySelector('.yt-frame');
+  if (first) notify(first);
+})();
+</script>
+</body>
+</html>
