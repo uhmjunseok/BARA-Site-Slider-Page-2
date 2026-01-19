@@ -41,12 +41,18 @@
 <body>
   <div class="root">
     <div class="mt-title" id="mtTitle">MICROCOSM</div>
-    <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
+    <div class="mt-sub" id="mtSub"></div>
+    <div class="mt-desc" id="mtDesc">
+      A compact study of sound, rhythm, and presence.
+    </div>
     <div class="mt-year">2025</div>
   </div>
 
 <script>
 (function(){
+  const DEFAULT_DESC =
+    'A compact study of sound, rhythm, and presence.';
+
   const DATA = {
     'DRPC2Ba7i7E': {
       title:'MICROCOSM I',
@@ -76,12 +82,16 @@
 
   function setDefault(){
     titleEl.textContent = 'MICROCOSM';
-    descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
+    subEl.textContent   = '';
+    descEl.textContent  = DEFAULT_DESC;
   }
 
   function apply(videoId){
     const d = DATA[videoId];
-    if (!d){ setDefault(); return; }
+    if (!d){
+      setDefault();
+      return;
+    }
     titleEl.textContent = d.title;
     subEl.textContent   = d.sub;
     descEl.textContent  = d.desc;
@@ -93,6 +103,7 @@
     apply(data.videoId);
   });
 
+  // ✅ 최초 로드 상태
   setDefault();
 })();
 </script>
