@@ -16,6 +16,7 @@
       font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
       font-size:15px;
 
+      /* Safari / Chrome 폰트 스케일 고정 */
       -webkit-text-size-adjust:100%;
       text-size-adjust:100%;
 
@@ -24,17 +25,51 @@
       color:#111;
     }
 
+    /* 패널 루트 */
     .root{
       height:100%;
       padding:24px;
       box-sizing:border-box;
       background:transparent;
+
+      /* ✅ 내용이 많아지면 패널 안에서만 스크롤 */
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
     }
 
-    .mt-title{ margin-bottom:6px; }
-    .mt-sub{ margin-bottom:14px; }
-    .mt-desc{ margin-bottom:14px; max-width:60ch; }
-    .mt-year{ opacity:.8; }
+    /* ✅ 박스보다 넓어질 경우 강제 줄바꿈 */
+    .root,
+    .mt-title,
+    .mt-sub,
+    .mt-desc{
+      max-width:100%;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
+    .mt-title{
+      margin-bottom:6px;
+    }
+
+    .mt-sub{
+      margin-bottom:14px;
+    }
+
+    .mt-desc{
+      margin-bottom:14px;
+      max-width:60ch;
+    }
+
+    .mt-year{
+      opacity:.8;
+    }
+
+    /* ✅ 모바일 보정 */
+    @media (max-width: 480px){
+      html, body{ font-size:14px; }
+      .root{ padding:18px; }
+      .mt-desc{ max-width:52ch; }
+    }
   </style>
 </head>
 
@@ -50,9 +85,6 @@
 
 <script>
 (function(){
-  const DEFAULT_DESC =
-    'A compact study of sound, rhythm, and presence.';
-
   const DATA = {
     'DRPC2Ba7i7E': {
       title:'MICROCOSM I',
@@ -83,7 +115,7 @@
   function setDefault(){
     titleEl.textContent = 'MICROCOSM';
     subEl.textContent   = '';
-    descEl.textContent  = DEFAULT_DESC;
+    descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
   }
 
   function apply(videoId){
@@ -97,13 +129,14 @@
     descEl.textContent  = d.desc;
   }
 
+  /* 플레이어 → 패널 메시지 수신 */
   window.addEventListener('message', function(ev){
     const data = ev.data;
     if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
     apply(data.videoId);
   });
 
-  // ✅ 최초 로드 상태
+  /* 초기 상태 */
   setDefault();
 })();
 </script>
