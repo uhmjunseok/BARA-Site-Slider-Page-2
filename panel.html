@@ -1,63 +1,79 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>MICROCOSM Panel</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MICROCOSM Panel</title>
 
-<style>
-html, body{
-  margin:0;
-  padding:0;
-  height:100%;
-  background:transparent;
-  overflow:hidden;
+  <style>
+    html, body{
+      margin:0;
+      padding:0;
+      height:100%;
+      background:transparent;
+      overflow:hidden;
 
-  font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
-  font-size:15px;
+      font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
+      font-size:15px;
 
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
 
-  letter-spacing:-0.3px;
-  line-height:1.2;
-  color:#111;
-}
+      letter-spacing:-0.3px;
+      line-height:1.2;
+      color:#111;
+    }
 
-.bara-micro-text{
-  height:100%;
-  padding:24px;
-  box-sizing:border-box;
-  background:transparent;
-}
+    .root{
+      height:100%;
+      padding:24px;
+      box-sizing:border-box;
+      background:transparent;
+    }
 
-.mt-title{ margin-bottom:6px; }
-.mt-sub{ margin-bottom:14px; }
-.mt-desc{ margin-bottom:14px; max-width:60ch; }
-.mt-year{ opacity:.8; }
-</style>
+    .mt-title{ margin-bottom:6px; }
+    .mt-sub{ margin-bottom:14px; }
+    .mt-desc{ margin-bottom:14px; max-width:60ch; }
+    .mt-year{ opacity:.8; }
+  </style>
 </head>
 
 <body>
-<div class="bara-micro-text">
-  <div class="mt-title" id="mtTitle">MICROCOSM</div>
-  <div class="mt-sub" id="mtSub"></div>
-  <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
-  <div class="mt-year">2025</div>
-</div>
+  <div class="root">
+    <div class="mt-title" id="mtTitle">MICROCOSM</div>
+    <div class="mt-sub" id="mtSub"></div>
+    <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
+    <div class="mt-year">2025</div>
+  </div>
 
 <script>
 (function(){
-  var DATA = {
-    'DRPC2Ba7i7E': { title:'MICROCOSM I',   sub:'RHYTHM',     desc:'A form appears, holds, and subtly disturbs the stillness of an office interior.' },
-    'Rp0HBSVz4hg': { title:'MICROCOSM II',  sub:'INTRUSION',  desc:'Particles drift and cluster, exposing surface and texture through slow accumulation.' },
-    'EBvlq_t6CHA': { title:'MICROCOSM III', sub:'SPREAD',     desc:'Elements expand and overlap, producing a continuous yet unstable spatial flow.' },
-    'TldWk1-rzIA': { title:'MICROCOSM IV',  sub:'DISRUPTION', desc:'Irregular movements interrupt the system, leaving residual patterns and breaks in rhythm.' }
+  const DATA = {
+    'DRPC2Ba7i7E': {
+      title:'MICROCOSM I',
+      sub:'RHYTHM',
+      desc:'A form appears, holds, and subtly disturbs the stillness of an office interior.'
+    },
+    'Rp0HBSVz4hg': {
+      title:'MICROCOSM II',
+      sub:'INTRUSION',
+      desc:'Particles drift and cluster, exposing surface and texture through slow accumulation.'
+    },
+    'EBvlq_t6CHA': {
+      title:'MICROCOSM III',
+      sub:'SPREAD',
+      desc:'Elements expand and overlap, producing a continuous yet unstable spatial flow.'
+    },
+    'TldWk1-rzIA': {
+      title:'MICROCOSM IV',
+      sub:'DISRUPTION',
+      desc:'Irregular movements interrupt the system, leaving residual patterns and breaks in rhythm.'
+    }
   };
 
-  var titleEl = document.getElementById('mtTitle');
-  var subEl   = document.getElementById('mtSub');
-  var descEl  = document.getElementById('mtDesc');
+  const titleEl = document.getElementById('mtTitle');
+  const subEl   = document.getElementById('mtSub');
+  const descEl  = document.getElementById('mtDesc');
 
   function setDefault(){
     titleEl.textContent = 'MICROCOSM';
@@ -65,8 +81,8 @@ html, body{
     descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
   }
 
-  function applyVideo(id){
-    var d = DATA[id];
+  function apply(videoId){
+    const d = DATA[videoId];
     if (!d){ setDefault(); return; }
     titleEl.textContent = d.title;
     subEl.textContent   = d.sub;
@@ -74,9 +90,9 @@ html, body{
   }
 
   window.addEventListener('message', function(ev){
-    var data = ev.data;
+    const data = ev.data;
     if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
-    applyVideo(data.videoId);
+    apply(data.videoId);
   });
 
   setDefault();
