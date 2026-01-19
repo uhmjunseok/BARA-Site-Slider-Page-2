@@ -3,78 +3,166 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>BARA Micro Panel</title>
+<title>MICROCOSM Player</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 
 <style>
 html,body{
-  margin:0;padding:0;height:100%;
-  background:transparent;overflow:hidden;
-  font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
-  font-size:15px;
-  -webkit-text-size-adjust:100%;
-  text-size-adjust:100%;
-  letter-spacing:-0.3px;
-  line-height:1.2;
-  color:#111;
+  margin:0;
+  height:100%;
+  background:transparent;
+  overflow:hidden;
+}
+:root{ --bara-border: rgba(0,0,0,.12); }
+
+.bara{
+  width:100%;
+  height:100%;
+  background:transparent;
+  overflow:hidden;
 }
 
-.bara-micro-text{
+.swiper{
+  width:100%;
   height:100%;
-  padding:24px;
-  box-sizing:border-box;
+}
+
+.swiper-wrapper{ height:100%; }
+
+.swiper-slide{
+  height:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.frame{
+  width:100%;
+  height:100%;
+  position:relative;
+  overflow:hidden;
+  cursor:pointer;
   background:transparent;
 }
 
-.mt-title{ margin-bottom:6px; }
-.mt-sub{ margin-bottom:14px; }
-.mt-desc{ margin-bottom:14px; max-width:60ch; }
-.mt-year{ opacity:.8; }
+.frame::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border:1px solid var(--bara-border);
+  pointer-events:none;
+  box-sizing:border-box;
+}
+
+.thumb{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.play{
+  position:absolute;
+  inset:0;
+  margin:auto;
+  width:0;height:0;
+  border-top:18px solid transparent;
+  border-bottom:18px solid transparent;
+  border-left:30px solid #fff;
+  pointer-events:none;
+  z-index:6;
+}
+
+.frame iframe{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  background:#000;
+  z-index:5;
+}
+
+.frame.is-playing .thumb,
+.frame.is-playing .play{ opacity:0; }
 </style>
 </head>
 
 <body>
-<div class="bara-micro-text" data-bara="microtext">
-  <div class="mt-title" id="mtTitle">MICROCOSM</div>
-  <div class="mt-sub" id="mtSub"></div>
-  <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
-  <div class="mt-year">2025</div>
+<div class="bara">
+  <div class="swiper" id="baraSwiper">
+    <div class="swiper-wrapper">
+
+      <div class="swiper-slide"><div class="frame" data-video="DRPC2Ba7i7E" data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739880/MICROCOSM_I_RHYTHM_%EB%B3%B5%EC%82%AC_sfdoka.jpg">
+        <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739880/MICROCOSM_I_RHYTHM_%EB%B3%B5%EC%82%AC_sfdoka.jpg"><div class="play"></div>
+      </div></div>
+
+      <div class="swiper-slide"><div class="frame" data-video="Rp0HBSVz4hg" data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739848/MICROCOSM_I_RHYTHM_Web_vr_%EB%B3%B5%EC%82%AC_zai26j.jpg">
+        <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739848/MICROCOSM_I_RHYTHM_Web_vr_%EB%B3%B5%EC%82%AC_zai26j.jpg"><div class="play"></div>
+      </div></div>
+
+      <div class="swiper-slide"><div class="frame" data-video="EBvlq_t6CHA" data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739868/MICROCOSM_III_SPREAD_Web_vr_%EB%B3%B5%EC%82%AC_vqxm6c.jpg">
+        <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739868/MICROCOSM_III_SPREAD_Web_vr_%EB%B3%B5%EC%82%AC_vqxm6c.jpg"><div class="play"></div>
+      </div></div>
+
+      <div class="swiper-slide"><div class="frame" data-video="TldWk1-rzIA" data-thumb="https://res.cloudinary.com/dlzutetki/image/upload/v1765739919/Sequence_01_1_%EB%B3%B5%EC%82%AC2_n6jsnn.jpg">
+        <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739919/Sequence_01_1_%EB%B3%B5%EC%82%AC2_n6jsnn.jpg"><div class="play"></div>
+      </div></div>
+
+    </div>
+  </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
 (function(){
-  const DATA = [
-    { title:'MICROCOSM I',   sub:'RHYTHM',     desc:'A form appears, holds, and subtly disturbs the stillness of an office interior.' },
-    { title:'MICROCOSM II',  sub:'INTRUSION',  desc:'Particles drift and cluster, exposing surface and texture through slow accumulation.' },
-    { title:'MICROCOSM III', sub:'SPREAD',     desc:'Elements expand and overlap, producing a continuous yet unstable spatial flow.' },
-    { title:'MICROCOSM IV',  sub:'DISRUPTION', desc:'Irregular movements interrupt the system, leaving residual patterns and breaks in rhythm.' }
-  ];
-
-  const titleEl = document.getElementById('mtTitle');
-  const subEl   = document.getElementById('mtSub');
-  const descEl  = document.getElementById('mtDesc');
-
-  function setDefault(){
-    titleEl.textContent = 'MICROCOSM';
-    subEl.textContent   = '';
-    descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
-  }
-
-  function setIndex(i){
-    const d = DATA[i];
-    if (!d) return setDefault();
-    titleEl.textContent = d.title;
-    subEl.textContent   = d.sub;
-    descEl.textContent  = d.desc;
-  }
-
-  // player.html -> window.top.postMessage({type:'BARA_MICRO_SELECT', index, videoId})
-  window.addEventListener('message', function(ev){
-    const data = ev.data;
-    if (!data || data.type !== 'BARA_MICRO_SELECT') return;
-    setIndex(Number(data.index || 0));
+  const swiper = new Swiper('#baraSwiper', {
+    direction:'vertical',
+    slidesPerView:2,
+    spaceBetween:0,
+    resistanceRatio:0,
+    threshold:8,
+    longSwipesRatio:0.15,
+    nested:true,
+    watchOverflow:false
   });
 
-  setDefault();
+  function restore(frame){
+    frame.classList.remove('is-playing');
+    frame.innerHTML = `<img class="thumb" src="${frame.dataset.thumb}"><div class="play"></div>`;
+  }
+
+  function stopOthers(active){
+    document.querySelectorAll('.frame').forEach(f=>{
+      if (f !== active && f.querySelector('iframe')) restore(f);
+    });
+  }
+
+  function play(frame){
+    if (frame.querySelector('iframe')) return;
+    stopOthers(frame);
+    frame.classList.add('is-playing');
+    frame.insertAdjacentHTML('beforeend', `
+      <iframe
+        src="https://www.youtube.com/embed/${frame.dataset.video}?autoplay=1&playsinline=1&rel=0"
+        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowfullscreen>
+      </iframe>
+    `);
+  }
+
+  function notify(videoId){
+    const msg = { type:'BARA_VIDEO_SELECT', videoId };
+    try { window.top.postMessage(msg, '*'); } catch(e){}
+  }
+
+  document.addEventListener('click', function(e){
+    const frame = e.target.closest('.frame');
+    if (!frame) return;
+    play(frame);
+    notify(frame.dataset.video);
+  }, true);
 })();
 </script>
 </body>
