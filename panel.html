@@ -14,9 +14,8 @@
       overflow:hidden;
 
       font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
-      font-size:15px;
+      font-size:15px; /* desktop */
 
-      /* Safari / Chrome 폰트 스케일 고정 */
       -webkit-text-size-adjust:100%;
       text-size-adjust:100%;
 
@@ -25,19 +24,17 @@
       color:#111;
     }
 
-    /* 패널 루트 */
     .root{
       height:100%;
       padding:24px;
       box-sizing:border-box;
       background:transparent;
 
-      /* ✅ 내용이 많아지면 패널 안에서만 스크롤 */
       overflow:auto;
       -webkit-overflow-scrolling:touch;
     }
 
-    /* ✅ 박스보다 넓어질 경우 강제 줄바꿈 */
+    /* 줄바꿈 / 넘침 방지 */
     .root,
     .mt-title,
     .mt-sub,
@@ -47,28 +44,22 @@
       word-break:break-word;
     }
 
-    .mt-title{
-      margin-bottom:6px;
-    }
+    .mt-title{ margin-bottom:6px; }
+    .mt-sub{ margin-bottom:14px; }
+    .mt-desc{ margin-bottom:14px; max-width:60ch; }
+    .mt-year{ opacity:.8; }
 
-    .mt-sub{
-      margin-bottom:14px;
-    }
-
-    .mt-desc{
-      margin-bottom:14px;
-      max-width:60ch;
-    }
-
-    .mt-year{
-      opacity:.8;
-    }
-
-    /* ✅ 모바일 보정 */
+    /* ✅ 모바일: 10pt 고정 */
     @media (max-width: 480px){
-      html, body{ font-size:14px; }
-      .root{ padding:18px; }
-      .mt-desc{ max-width:52ch; }
+      html, body{
+        font-size:10pt; /* 🔥 여기 */
+      }
+      .root{
+        padding:14px;
+      }
+      .mt-desc{
+        max-width:100%;
+      }
     }
   </style>
 </head>
@@ -120,23 +111,18 @@
 
   function apply(videoId){
     const d = DATA[videoId];
-    if (!d){
-      setDefault();
-      return;
-    }
+    if (!d){ setDefault(); return; }
     titleEl.textContent = d.title;
     subEl.textContent   = d.sub;
     descEl.textContent  = d.desc;
   }
 
-  /* 플레이어 → 패널 메시지 수신 */
   window.addEventListener('message', function(ev){
     const data = ev.data;
     if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
     apply(data.videoId);
   });
 
-  /* 초기 상태 */
   setDefault();
 })();
 </script>
