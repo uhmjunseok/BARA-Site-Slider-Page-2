@@ -79,26 +79,19 @@ const swiper = new Swiper('.swiper', {
   direction:'vertical',
   slidesPerView:2,
   speed:280,
-
-  // iframe/Readymag 환경에서 스크롤/스와이프 안정화
   nested:true,
   touchStartPreventDefault:false,
   resistanceRatio:0.85,
-
-  mousewheel:{
-    forceToAxis:true,
-    sensitivity:0.6,
-    thresholdDelta:30,
-    thresholdTime:250
-  }
+  mousewheel:{ forceToAxis:true, sensitivity:0.6, thresholdDelta:30, thresholdTime:250 }
 });
 
 const frames = Array.from(document.querySelectorAll('.frame'));
 
 /* =========================
-   3) 패널 연동: 오늘 방식(READY + boot)
+   3) 패널 연동: READY + boot + (추가) REQUEST_STATE 대응
 ========================= */
-let lastMsg = null;
+let lastMsg = null;           // {type:'BARA_VIDEO_SELECT', videoId}
+let currentVideoId = null;    // ✅ 상태 요청 응답용
 let panelReady = false;
 let bootTimer = null;
 
@@ -107,23 +100,46 @@ function postTop(msg){
 }
 
 function notify(videoId){
+  currentVideoId = videoId;               // ✅ 현재 상태 저장
   lastMsg = { type:'BARA_VIDEO_SELECT', videoId };
   postTop(lastMsg);
 }
 
-/* 패널 READY 수신 → 마지막 신호 즉시 재전송 */
+/* ✅ 패널 READY 수신 → 마지막 신호 즉시 재전송 */
 window.addEventListener('message', function(ev){
   const data = ev.data;
-  if (!data) return;
+  if (!data || !data.type) return;
 
   if (data.type === 'BARA_PANEL_READY'){
     panelReady = true;
     if (lastMsg) postTop(lastMsg);
     return;
   }
+
+  // ✅ 중개가 상태를 요청하면, 마지막 선택을 다시 전송
+  if (data.type === 'BARA_REQUEST_STATE'){
+    if (!currentVideoId){
+      const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
+      if (f) currentVideoId = f.dataset.video;
+    }
+    if (currentVideoId){
+      postTop({ type:'BARA_VIDEO_SELECT', videoId: currentVideoId });
+    }
+    return;
+  }
 }, true);
 
-/* 첫 진입/복귀/탭 복귀에서 READY 지연 대비: 2초간 반복 송신 */
+/* ✅ player 준비 신호 (중개가 복귀 타이밍 잡기 쉽게) */
+function playerReady(){
+  postTop({ type:'BARA_PLAYER_READY' });
+}
+playerReady();
+setTimeout(playerReady, 60);
+setTimeout(playerReady, 180);
+window.addEventListener('load', playerReady);
+window.addEventListener('pageshow', playerReady);
+
+/* ✅ 첫 진입/복귀/탭 복귀에서 READY 지연 대비: 2초간 반복 송신 */
 function boot(){
   panelReady = false;
   if (bootTimer) clearInterval(bootTimer);
@@ -136,6 +152,7 @@ function boot(){
     null;
 
   if (!lastMsg && fallbackId){
+    currentVideoId = fallbackId;
     lastMsg = { type:'BARA_VIDEO_SELECT', videoId:fallbackId };
   }
 
@@ -143,7 +160,7 @@ function boot(){
   bootTimer = setInterval(function(){
     tries++;
     if (lastMsg) postTop(lastMsg);
-    if (panelReady || tries > 40) clearInterval(bootTimer); // 40*50ms = 2초
+    if (panelReady || tries > 40) clearInterval(bootTimer); // 2초
   }, 50);
 }
 
@@ -155,7 +172,6 @@ document.addEventListener('visibilitychange', function(){
 });
 if (window.visualViewport){
   window.visualViewport.addEventListener('resize', function(){
-    // 줌/주소창 변화로 타이밍 꼬일 때 재부팅
     setTimeout(boot, 0);
   });
 }
