@@ -3,9 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MICROCOSM Panel</title>
+  <title>BARA Panel</title>
 
   <style>
+    :root{
+      --ui-scale: 1;   /* 기본 */
+      --fs: 15px;      /* 기본 폰트 (데스크탑 기준) */
+      --pad: 24px;     /* 기본 패딩 */
+      --gap-s: 6px;    /* title-sub 간격 */
+      --gap: 14px;     /* 기본 간격 */
+      --desc-max: 60ch;
+    }
+
     html, body{
       margin:0;
       padding:0;
@@ -14,68 +23,120 @@
       overflow:hidden;
 
       font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
-      font-size:15px; /* desktop */
-
+      font-size: calc(var(--fs) * var(--ui-scale));
       -webkit-text-size-adjust:100%;
       text-size-adjust:100%;
 
       letter-spacing:-0.3px;
       line-height:1.2;
       color:#111;
+
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
     }
+
+    /* iOS/iframe 글자 튐 완화 */
+    *{ max-height:1000000px; }
 
     .root{
       height:100%;
-      padding:24px;
+      padding: calc(var(--pad) * var(--ui-scale));
       box-sizing:border-box;
       background:transparent;
 
+      /* 줄바꿈/넘침 방지 */
+      white-space:normal;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+
+      /* 네가 원래 쓰던 스크롤 유지(필요 시) */
       overflow:auto;
       -webkit-overflow-scrolling:touch;
     }
 
-    /* 줄바꿈 / 넘침 방지 */
-    .root,
-    .mt-title,
-    .mt-sub,
+    .mt-title{ margin-bottom: calc(var(--gap-s) * var(--ui-scale)); }
+    .mt-sub{   margin-bottom: calc(var(--gap) * var(--ui-scale)); }
     .mt-desc{
-      max-width:100%;
-      overflow-wrap:anywhere;
-      word-break:break-word;
+      margin-bottom: calc(var(--gap) * var(--ui-scale));
+      max-width: var(--desc-max);
     }
-
-    .mt-title{ margin-bottom:6px; }
-    .mt-sub{ margin-bottom:14px; }
-    .mt-desc{ margin-bottom:14px; max-width:60ch; }
     .mt-year{ opacity:.8; }
 
-    /* ✅ 모바일: 10pt 고정 */
+    /* 모바일은 “폰트 자체를 줄이기”로 해결 (iframe scale 의존 최소화) */
     @media (max-width: 480px){
-      html, body{
-        font-size:10pt; /* 🔥 여기 */
-      }
-      .root{
-        padding:14px;
-      }
-      .mt-desc{
-        max-width:100%;
+      :root{
+        --fs: 10px;
+        --pad: 14px;
+        --desc-max: 100%;
       }
     }
   </style>
 </head>
 
 <body>
-  <div class="root">
+  <div class="root" id="baraRoot">
     <div class="mt-title" id="mtTitle">MICROCOSM</div>
     <div class="mt-sub" id="mtSub"></div>
-    <div class="mt-desc" id="mtDesc">
-      A compact study of sound, rhythm, and presence.
-    </div>
-    <div class="mt-year">2025</div>
+    <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
+    <div class="mt-year" id="mtYear">2025</div>
   </div>
 
 <script>
 (function(){
+  /* =========================
+     A) (Page 3와 동일) 줌/뷰포트 변화에서도 안정 적용
+  ========================= */
+  function applyUiScale(){
+    // Page 2는 “브라우저별 스케일 차이”를 크게 안 주는 게 안정적이라 기본 1로 고정.
+    // (원하면 특정 브라우저만 보정값을 여기서 걸면 됨)
+    document.documentElement.style.setProperty('--ui-scale', '1');
+  }
+
+  function softRelayout(){
+    var root = document.getElementById('baraRoot');
+    if (!root) return;
+    try { root.getBoundingClientRect(); } catch(e){}
+    root.style.transform = 'translateZ(0)';
+    setTimeout(function(){ root.style.transform = ''; }, 0);
+  }
+
+  applyUiScale();
+
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', function(){
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          applyUiScale();
+          softRelayout();
+          readyBurst();
+        });
+      });
+    });
+  }
+
+  window.addEventListener('resize', function(){
+    applyUiScale();
+    softRelayout();
+  });
+
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden){
+      applyUiScale();
+      softRelayout();
+      readyBurst();
+    }
+  });
+
+  window.addEventListener('pageshow', function(){
+    applyUiScale();
+    softRelayout();
+    readyBurst();
+  });
+
+  /* =========================
+     B) MICROCOSM 텍스트 매핑
+  ========================= */
   const DATA = {
     'DRPC2Ba7i7E': {
       title:'MICROCOSM I',
@@ -111,19 +172,46 @@
 
   function apply(videoId){
     const d = DATA[videoId];
-    if (!d){ setDefault(); return; }
+    if (!d){ setDefault(); softRelayout(); return; }
     titleEl.textContent = d.title;
     subEl.textContent   = d.sub;
     descEl.textContent  = d.desc;
+    softRelayout();
   }
 
   window.addEventListener('message', function(ev){
     const data = ev.data;
-    if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
-    apply(data.videoId);
-  });
+    if (!data) return;
+    if (data.type === 'BARA_VIDEO_SELECT') apply(data.videoId);
+  }, true);
 
+  /* =========================
+     C) READY 신호 (연동 안정화)
+  ========================= */
+  function ready(){
+    try { window.top.postMessage({ type:'BARA_PANEL_READY' }, '*'); } catch(e){}
+  }
+
+  function readyBurst(){
+    ready();
+    setTimeout(ready, 60);
+    setTimeout(ready, 180);
+    setTimeout(ready, 420);
+  }
+
+  /* =========================
+     D) 초기 상태
+  ========================= */
   setDefault();
+  readyBurst();
+  setTimeout(softRelayout, 0);
+  setTimeout(softRelayout, 200);
+
+  window.addEventListener('load', function(){
+    readyBurst();
+    setTimeout(softRelayout, 0);
+    setTimeout(softRelayout, 200);
+  });
 })();
 </script>
 </body>
