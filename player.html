@@ -62,6 +62,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
+/* =========================
+   1) VH 안정화
+========================= */
 function setVh(){
   document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
 }
@@ -69,12 +72,15 @@ setVh();
 window.addEventListener('resize', setVh);
 if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh);
 
+/* =========================
+   2) Swiper
+========================= */
 const swiper = new Swiper('.swiper', {
   direction:'vertical',
   slidesPerView:2,
   speed:280,
 
-  // ✅ iframe/Readymag 환경에서 스크롤/스와이프 안정화
+  // iframe/Readymag 환경에서 스크롤/스와이프 안정화
   nested:true,
   touchStartPreventDefault:false,
   resistanceRatio:0.85,
@@ -89,6 +95,77 @@ const swiper = new Swiper('.swiper', {
 
 const frames = Array.from(document.querySelectorAll('.frame'));
 
+/* =========================
+   3) 패널 연동: 오늘 방식(READY + boot)
+========================= */
+let lastMsg = null;
+let panelReady = false;
+let bootTimer = null;
+
+function postTop(msg){
+  try { window.top.postMessage(msg, '*'); } catch(e) {}
+}
+
+function notify(videoId){
+  lastMsg = { type:'BARA_VIDEO_SELECT', videoId };
+  postTop(lastMsg);
+}
+
+/* 패널 READY 수신 → 마지막 신호 즉시 재전송 */
+window.addEventListener('message', function(ev){
+  const data = ev.data;
+  if (!data) return;
+
+  if (data.type === 'BARA_PANEL_READY'){
+    panelReady = true;
+    if (lastMsg) postTop(lastMsg);
+    return;
+  }
+}, true);
+
+/* 첫 진입/복귀/탭 복귀에서 READY 지연 대비: 2초간 반복 송신 */
+function boot(){
+  panelReady = false;
+  if (bootTimer) clearInterval(bootTimer);
+
+  // lastMsg가 없으면 "현재 활성 슬라이드" 또는 첫 슬라이드로 초기화
+  const activeFrame = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
+  const fallbackId =
+    (activeFrame && activeFrame.dataset.video) ||
+    (frames[0] && frames[0].dataset.video) ||
+    null;
+
+  if (!lastMsg && fallbackId){
+    lastMsg = { type:'BARA_VIDEO_SELECT', videoId:fallbackId };
+  }
+
+  let tries = 0;
+  bootTimer = setInterval(function(){
+    tries++;
+    if (lastMsg) postTop(lastMsg);
+    if (panelReady || tries > 40) clearInterval(bootTimer); // 40*50ms = 2초
+  }, 50);
+}
+
+/* 부팅 트리거들 */
+window.addEventListener('load', boot);
+window.addEventListener('pageshow', boot);
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden) boot();
+});
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', function(){
+    // 줌/주소창 변화로 타이밍 꼬일 때 재부팅
+    setTimeout(boot, 0);
+  });
+}
+window.addEventListener('resize', function(){
+  setTimeout(boot, 0);
+});
+
+/* =========================
+   4) 플레이
+========================= */
 function stopOthers(current){
   frames.forEach(f=>{
     if(f !== current){
@@ -97,11 +174,6 @@ function stopOthers(current){
       if(i) i.remove();
     }
   });
-}
-
-function notify(videoId){
-  const msg = { type:'BARA_VIDEO_SELECT', videoId };
-  try { window.top.postMessage(msg, '*'); } catch(e){}
 }
 
 frames.forEach(f=>{
@@ -118,6 +190,7 @@ frames.forEach(f=>{
 
     f.appendChild(i);
     f.classList.add('is-playing');
+
     notify(id);
   }, { passive:true });
 });
@@ -127,7 +200,16 @@ swiper.on('slideChange', ()=>{
   if(f) notify(f.dataset.video);
 });
 
-// ✅ 첫 진입/뒤로가기 복귀에서 휠/터치가 안 먹는 케이스 방지
+/* 첫 화면에서도 1회 신호 확보 + 부팅 */
+setTimeout(function(){
+  const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
+  if(f) notify(f.dataset.video);
+  boot();
+}, 0);
+
+/* =========================
+   5) (옵션) 포커스 이슈 완화
+========================= */
 (function(){
   function focusFix(){
     try { window.focus(); } catch(e){}
