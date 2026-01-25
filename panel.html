@@ -1,194 +1,17 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>MICROCOSM Panel</title>
-
-  <style>
-    :root{
-      --ui-scale: 1;   /* 기본 */
-      --fs: 10px;      /* ✅ Page 3과 동일: 기본 폰트 */
-      --pad: 24px;     /* 기본 패딩 */
-      --gap-s: 6px;    /* title-sub 간격 */
-      --gap: 14px;     /* 기본 간격 */
-      --desc-max: 60ch;
-    }
-
-    html, body{
-      margin:0;
-      padding:0;
-      height:100%;
-      background:transparent;
-      overflow:hidden;
-
-      font-family:"Aktiv Grotesk","AktivGrotesk",Arial,sans-serif;
-      font-size: calc(var(--fs) * var(--ui-scale));
-      -webkit-text-size-adjust:100%;
-      text-size-adjust:100%;
-
-      letter-spacing:-0.3px;
-      line-height:1.2;
-      color:#111;
-
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: geometricPrecision;
-    }
-
-    /* iOS/iframe 글자 튐 완화 */
-    *{ max-height:1000000px; }
-
-    .root{
-      height:100%;
-      padding: calc(var(--pad) * var(--ui-scale));
-      box-sizing:border-box;
-      background:transparent;
-
-      /* ✅ 스크롤 OFF */
-      overflow:hidden;
-
-      /* 줄바꿈/넘침 방지 */
-      white-space:normal;
-      overflow-wrap:anywhere;
-      word-break:break-word;
-    }
-
-    .mt-title{ margin-bottom: calc(var(--gap-s) * var(--ui-scale)); }
-    .mt-sub{   margin-bottom: calc(var(--gap)   * var(--ui-scale)); }
-    .mt-desc{
-      margin-bottom: calc(var(--gap) * var(--ui-scale));
-      max-width: var(--desc-max);
-    }
-    .mt-year{ opacity:.8; }
-
-    /* 모바일: 폰트 자체를 줄여서 안정화 (Page 3 방식과 동일) */
-    @media (max-width: 480px){
-      :root{
-        --fs: 10px;     /* 이미 10이라 유지 */
-        --pad: 14px;
-        --desc-max: 100%;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="root" id="baraRoot">
-    <div class="mt-title" id="mtTitle">MICROCOSM</div>
-    <div class="mt-sub" id="mtSub"></div>
-    <div class="mt-desc" id="mtDesc">A compact study of sound, rhythm, and presence.</div>
-    <div class="mt-year" id="mtYear">2025</div>
-  </div>
-
-<script>
-(function(){
-  /* =========================
-     A) (Page 3와 동일) 크롬(데스크탑) 판별 + ui-scale 재적용
-  ========================= */
-  function isDesktopChrome(){
-    if (navigator.userAgentData && navigator.userAgentData.brands){
-      const brands = navigator.userAgentData.brands.map(b => (b.brand || '').toLowerCase());
-      const isChromium = brands.some(b => b.includes('chromium')) || brands.some(b => b.includes('google chrome'));
-      const isEdge = brands.some(b => b.includes('microsoft edge'));
-      const isOpera = brands.some(b => b.includes('opera'));
-      const isMobile = navigator.userAgentData.mobile === true;
-      return isChromium && !isEdge && !isOpera && !isMobile;
-    }
-    var ua = navigator.userAgent;
-    return /Chrome/.test(ua) && !/Edg|OPR|Brave/.test(ua) && !/Android/.test(ua);
-  }
-
-  function applyUiScale(){
-    // ✅ Page 3과 동일 정책: 크롬 데스크탑만 1.5
-    if (isDesktopChrome()){
-      document.documentElement.style.setProperty('--ui-scale', '1.5');
-    } else {
-      document.documentElement.style.setProperty('--ui-scale', '1');
-    }
-  }
-
-  function softRelayout(){
-    var root = document.getElementById('baraRoot');
-    if (!root) return;
-    try { root.getBoundingClientRect(); } catch(e){}
-    root.style.transform = 'translateZ(0)';
-    setTimeout(function(){ root.style.transform = ''; }, 0);
-  }
-
-  applyUiScale();
-
-  if (window.visualViewport){
-    window.visualViewport.addEventListener('resize', function(){
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          applyUiScale();
-          softRelayout();
-          readyBurst();
-        });
-      });
-    });
-  }
-
-  window.addEventListener('resize', function(){
-    applyUiScale();
-    softRelayout();
-  });
-
-  document.addEventListener('visibilitychange', function(){
-    if (!document.hidden){
-      applyUiScale();
-      softRelayout();
-      readyBurst();
-    }
-  });
-
-  window.addEventListener('pageshow', function(){
-    applyUiScale();
-    softRelayout();
-    readyBurst();
-  });
-
-  /* =========================
-     B) MICROCOSM 텍스트 매핑
-  ========================= */
-  const DATA = {
-    'DRPC2Ba7i7E': {
-      title:'MICROCOSM I',
-      sub:'RHYTHM',
-      desc:'A form appears, holds, and subtly disturbs the stillness of an office interior.'
-    },
-    'Rp0HBSVz4hg': {
-      title:'MICROCOSM II',
-      sub:'INTRUSION',
-      desc:'Particles drift and cluster, exposing surface and texture through slow accumulation.'
-    },
-    'EBvlq_t6CHA': {
-      title:'MICROCOSM III',
-      sub:'SPREAD',
-      desc:'Elements expand and overlap, producing a continuous yet unstable spatial flow.'
-    },
-    'TldWk1-rzIA': {
-      title:'MICROCOSM IV',
-      sub:'DISRUPTION',
-      desc:'Irregular movements interrupt the system, leaving residual patterns and breaks in rhythm.'
-    }
-  };
-
-  const titleEl = document.getElementById('mtTitle');
-  const subEl   = document.getElementById('mtSub');
-  const descEl  = document.getElementById('mtDesc');
-
-  function setDefault(){
-    titleEl.textContent = 'MICROCOSM';
-    subEl.textContent   = '';
-    descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
-    softRelayout();
-  }
+  let currentVideoId = null;
 
   function apply(videoId){
+    if (!videoId || typeof videoId !== 'string') return;
+
     const d = DATA[videoId];
-    if (!d){ setDefault(); return; }
+
+    // ✅ DATA에 없는 값이면 default로 되돌리지 말고 "그냥 무시"
+    if (!d) return;
+
+    // ✅ 같은 값이면 재적용하지 않음
+    if (videoId === currentVideoId) return;
+    currentVideoId = videoId;
+
     titleEl.textContent = d.title;
     subEl.textContent   = d.sub;
     descEl.textContent  = d.desc;
@@ -197,38 +20,10 @@
 
   window.addEventListener('message', function(ev){
     const data = ev.data;
-    if (!data) return;
-    if (data.type === 'BARA_VIDEO_SELECT') apply(data.videoId);
+    if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
+
+    // (선택) top에서 온 것만 받기
+    if (ev.source !== window.top) return;
+
+    apply(data.videoId);
   }, true);
-
-  /* =========================
-     C) READY 신호 (연동 안정화)
-  ========================= */
-  function ready(){
-    try { window.top.postMessage({ type:'BARA_PANEL_READY' }, '*'); } catch(e){}
-  }
-
-  function readyBurst(){
-    ready();
-    setTimeout(ready, 60);
-    setTimeout(ready, 180);
-    setTimeout(ready, 420);
-  }
-
-  /* =========================
-     D) 초기 상태
-  ========================= */
-  setDefault();
-  readyBurst();
-  setTimeout(softRelayout, 0);
-  setTimeout(softRelayout, 200);
-
-  window.addEventListener('load', function(){
-    readyBurst();
-    setTimeout(softRelayout, 0);
-    setTimeout(softRelayout, 200);
-  });
-})();
-</script>
-</body>
-</html>
