@@ -7,11 +7,11 @@
 
   <style>
     :root{
-      --ui-scale: 1;   /* 기본 */
-      --fs: 10px;      /* ✅ Page 3과 동일: 기본 폰트 */
-      --pad: 24px;     /* 기본 패딩 */
-      --gap-s: 6px;    /* title-sub 간격 */
-      --gap: 14px;     /* 기본 간격 */
+      --ui-scale: 1;
+      --fs: 10px;
+      --pad: 24px;
+      --gap-s: 6px;
+      --gap: 14px;
       --desc-max: 60ch;
     }
 
@@ -36,7 +36,6 @@
       text-rendering: geometricPrecision;
     }
 
-    /* iOS/iframe 글자 튐 완화 */
     *{ max-height:1000000px; }
 
     .root{
@@ -44,11 +43,8 @@
       padding: calc(var(--pad) * var(--ui-scale));
       box-sizing:border-box;
       background:transparent;
-
-      /* ✅ 스크롤 OFF */
       overflow:hidden;
 
-      /* 줄바꿈/넘침 방지 */
       white-space:normal;
       overflow-wrap:anywhere;
       word-break:break-word;
@@ -62,10 +58,9 @@
     }
     .mt-year{ opacity:.8; }
 
-    /* 모바일: 폰트 자체를 줄여서 안정화 (Page 3 방식과 동일) */
     @media (max-width: 480px){
       :root{
-        --fs: 10px;     /* 이미 10이라 유지 */
+        --fs: 10px;
         --pad: 14px;
         --desc-max: 100%;
       }
@@ -84,23 +79,24 @@
 <script>
 (function(){
   /* =========================
-     A) (Page 3와 동일) 크롬(데스크탑) 판별 + ui-scale 재적용
+     A) 크롬(데스크탑) 판별 + ui-scale
   ========================= */
   function isDesktopChrome(){
-    if (navigator.userAgentData && navigator.userAgentData.brands){
-      const brands = navigator.userAgentData.brands.map(b => (b.brand || '').toLowerCase());
-      const isChromium = brands.some(b => b.includes('chromium')) || brands.some(b => b.includes('google chrome'));
-      const isEdge = brands.some(b => b.includes('microsoft edge'));
-      const isOpera = brands.some(b => b.includes('opera'));
-      const isMobile = navigator.userAgentData.mobile === true;
-      return isChromium && !isEdge && !isOpera && !isMobile;
-    }
+    try{
+      if (navigator.userAgentData && navigator.userAgentData.brands){
+        const brands = navigator.userAgentData.brands.map(b => (b.brand || '').toLowerCase());
+        const isChromium = brands.some(b => b.includes('chromium')) || brands.some(b => b.includes('google chrome'));
+        const isEdge = brands.some(b => b.includes('microsoft edge'));
+        const isOpera = brands.some(b => b.includes('opera'));
+        const isMobile = navigator.userAgentData.mobile === true;
+        return isChromium && !isEdge && !isOpera && !isMobile;
+      }
+    }catch(e){}
     var ua = navigator.userAgent;
     return /Chrome/.test(ua) && !/Edg|OPR|Brave/.test(ua) && !/Android/.test(ua);
   }
 
   function applyUiScale(){
-    // ✅ Page 3과 동일 정책: 크롬 데스크탑만 1.5
     if (isDesktopChrome()){
       document.documentElement.style.setProperty('--ui-scale', '1.5');
     } else {
@@ -150,11 +146,7 @@
   });
 
   /* =========================
-     B) MICROCOSM 텍스트 매핑
-     ✅ 수정 반영:
-       - DATA에 없는 id면 default로 되돌리지 않고 무시
-       - 같은 id 재적용 금지
-       - top에서 온 메시지만 반영
+     B) 텍스트 매핑 (중복/미등록 방지)
   ========================= */
   const DATA = {
     'DRPC2Ba7i7E': {
@@ -184,6 +176,7 @@
   const descEl  = document.getElementById('mtDesc');
 
   function setDefault(){
+    if (!titleEl || !subEl || !descEl) return;
     titleEl.textContent = 'MICROCOSM';
     subEl.textContent   = '';
     descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
@@ -193,11 +186,12 @@
   let currentVideoId = null;
 
   function apply(videoId){
+    if (!titleEl || !subEl || !descEl) return;
     if (!videoId || typeof videoId !== 'string') return;
 
     const d = DATA[videoId];
 
-    // ✅ DATA에 없는 값이면 default로 되돌리지 말고 "그냥 무시"
+    // ✅ DATA에 없는 값이면 무시 (default로 되돌리지 않음)
     if (!d) return;
 
     // ✅ 같은 값이면 재적용하지 않음
@@ -214,14 +208,15 @@
     const data = ev.data;
     if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
 
-    // ✅ top에서 온 것만 받기 (다른 iframe/스크립트 혼입 방지)
-    if (ev.source !== window.top) return;
+    // ✅ 환경별로 source가 top 또는 parent로 잡히는 케이스 모두 허용
+    const fromTopOrParent = (ev.source === window.top) || (ev.source === window.parent);
+    if (!fromTopOrParent) return;
 
     apply(data.videoId);
   }, true);
 
   /* =========================
-     C) READY 신호 (연동 안정화)
+     C) READY 신호
   ========================= */
   function ready(){
     try { window.top.postMessage({ type:'BARA_PANEL_READY' }, '*'); } catch(e){}
