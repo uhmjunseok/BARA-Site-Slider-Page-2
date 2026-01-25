@@ -24,7 +24,6 @@
   <div class="swiper">
     <div class="swiper-wrapper">
 
-      <!-- MICROCOSM I : RHYTHM -->
       <div class="swiper-slide">
         <div class="frame" data-video="DRPC2Ba7i7E">
           <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739880/MICROCOSM_I_RHYTHM_%EB%B3%B5%EC%82%AC_sfdoka.jpg" alt="">
@@ -32,7 +31,6 @@
         </div>
       </div>
 
-      <!-- MICROCOSM II : INTRUSION -->
       <div class="swiper-slide">
         <div class="frame" data-video="Rp0HBSVz4hg">
           <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739848/MICROCOSM_I_RHYTHM_Web_vr_%EB%B3%B5%EC%82%AC_zai26j.jpg" alt="">
@@ -40,7 +38,6 @@
         </div>
       </div>
 
-      <!-- MICROCOSM III : SPREAD -->
       <div class="swiper-slide">
         <div class="frame" data-video="EBvlq_t6CHA">
           <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739868/MICROCOSM_III_SPREAD_Web_vr_%EB%B3%B5%EC%82%AC_vqxm6c.jpg" alt="">
@@ -48,7 +45,6 @@
         </div>
       </div>
 
-      <!-- MICROCOSM IV : DISRUPTION -->
       <div class="swiper-slide">
         <div class="frame" data-video="TldWk1-rzIA">
           <img class="thumb" src="https://res.cloudinary.com/dlzutetki/image/upload/v1765739919/Sequence_01_1_%EB%B3%B5%EC%82%AC2_n6jsnn.jpg" alt="">
@@ -88,39 +84,35 @@ const swiper = new Swiper('.swiper', {
 const frames = Array.from(document.querySelectorAll('.frame'));
 
 /* =========================
-   3) 패널 연동: READY + boot + (추가) REQUEST_STATE 대응
+   3) 패널 연동: "변경 시 1회" + "요청 시 응답"
+   - 재시도/복구는 TOP(페이지2 통괄)에서만 담당
 ========================= */
-let lastMsg = null;           // {type:'BARA_VIDEO_SELECT', videoId}
-let currentVideoId = null;    // ✅ 상태 요청 응답용
-let panelReady = false;
-let bootTimer = null;
+let currentVideoId = null;
 
 function postTop(msg){
   try { window.top.postMessage(msg, '*'); } catch(e) {}
 }
 
 function notify(videoId){
-  currentVideoId = videoId;               // ✅ 현재 상태 저장
-  lastMsg = { type:'BARA_VIDEO_SELECT', videoId };
-  postTop(lastMsg);
+  if (!videoId || typeof videoId !== 'string') return;
+  if (videoId === currentVideoId) return; // ✅ 중복 방지
+  currentVideoId = videoId;
+  postTop({ type:'BARA_VIDEO_SELECT', videoId });
 }
 
-/* ✅ 패널 READY 수신 → 마지막 신호 즉시 재전송 */
+/* ✅ TOP이 상태를 요청하면 현재 선택을 1회 응답 */
 window.addEventListener('message', function(ev){
   const data = ev.data;
   if (!data || !data.type) return;
 
-  if (data.type === 'BARA_PANEL_READY'){
-    panelReady = true;
-    if (lastMsg) postTop(lastMsg);
-    return;
-  }
+  // ✅ 요청은 TOP에서만 받기 (다른 iframe/확장 스크립트 섞임 방지)
+  if (ev.source !== window.top) return;
 
-  // ✅ 중개가 상태를 요청하면, 마지막 선택을 다시 전송
   if (data.type === 'BARA_REQUEST_STATE'){
+    // currentVideoId가 없으면 activeIndex 기반으로 산출
     if (!currentVideoId){
       const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
-      if (f) currentVideoId = f.dataset.video;
+      if (f && f.dataset.video) currentVideoId = f.dataset.video;
     }
     if (currentVideoId){
       postTop({ type:'BARA_VIDEO_SELECT', videoId: currentVideoId });
@@ -129,7 +121,7 @@ window.addEventListener('message', function(ev){
   }
 }, true);
 
-/* ✅ player 준비 신호 (중개가 복귀 타이밍 잡기 쉽게) */
+/* ✅ player 준비 신호 (TOP이 복귀 타이밍 잡기 쉽게) */
 function playerReady(){
   postTop({ type:'BARA_PLAYER_READY' });
 }
@@ -138,46 +130,6 @@ setTimeout(playerReady, 60);
 setTimeout(playerReady, 180);
 window.addEventListener('load', playerReady);
 window.addEventListener('pageshow', playerReady);
-
-/* ✅ 첫 진입/복귀/탭 복귀에서 READY 지연 대비: 2초간 반복 송신 */
-function boot(){
-  panelReady = false;
-  if (bootTimer) clearInterval(bootTimer);
-
-  // lastMsg가 없으면 "현재 활성 슬라이드" 또는 첫 슬라이드로 초기화
-  const activeFrame = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
-  const fallbackId =
-    (activeFrame && activeFrame.dataset.video) ||
-    (frames[0] && frames[0].dataset.video) ||
-    null;
-
-  if (!lastMsg && fallbackId){
-    currentVideoId = fallbackId;
-    lastMsg = { type:'BARA_VIDEO_SELECT', videoId:fallbackId };
-  }
-
-  let tries = 0;
-  bootTimer = setInterval(function(){
-    tries++;
-    if (lastMsg) postTop(lastMsg);
-    if (panelReady || tries > 40) clearInterval(bootTimer); // 2초
-  }, 50);
-}
-
-/* 부팅 트리거들 */
-window.addEventListener('load', boot);
-window.addEventListener('pageshow', boot);
-document.addEventListener('visibilitychange', function(){
-  if (!document.hidden) boot();
-});
-if (window.visualViewport){
-  window.visualViewport.addEventListener('resize', function(){
-    setTimeout(boot, 0);
-  });
-}
-window.addEventListener('resize', function(){
-  setTimeout(boot, 0);
-});
 
 /* =========================
    4) 플레이
@@ -211,16 +163,16 @@ frames.forEach(f=>{
   }, { passive:true });
 });
 
+/* 슬라이드 변경 시도 중복 방지된 notify만 호출 */
 swiper.on('slideChange', ()=>{
   const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
-  if(f) notify(f.dataset.video);
+  if(f && f.dataset.video) notify(f.dataset.video);
 });
 
-/* 첫 화면에서도 1회 신호 확보 + 부팅 */
+/* 최초 1회 상태 송신 */
 setTimeout(function(){
   const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
-  if(f) notify(f.dataset.video);
-  boot();
+  if(f && f.dataset.video) notify(f.dataset.video);
 }, 0);
 
 /* =========================
