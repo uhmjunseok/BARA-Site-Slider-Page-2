@@ -11,11 +11,19 @@
     .app{height:calc(var(--vh)*100)}
     .swiper{height:100%;touch-action:pan-y}
     .swiper-slide{height:50%!important;display:flex;align-items:center;justify-content:center}
+
     .frame{position:relative;height:100%;aspect-ratio:16/9;cursor:pointer}
     .thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .play{position:absolute;inset:0;margin:auto;width:0;height:0;border-top:18px solid transparent;border-bottom:18px solid transparent;border-left:30px solid #fff;pointer-events:none;opacity:.9}
     iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
     .is-playing .thumb,.is-playing .play{opacity:0}
+
+    /* ✅ 끝 여백(빈 슬라이드) */
+    .swiper-slide.is-spacer{
+      height:50%!important;
+      pointer-events:none;          /* 클릭/터치로 아무 일도 안 일어나게 */
+      background:transparent;       /* 완전 빈 여백 */
+    }
   </style>
 </head>
 <body>
@@ -52,6 +60,9 @@
         </div>
       </div>
 
+      <!-- ✅ 마지막 다음: 빈 슬라이드(여백) -->
+      <div class="swiper-slide is-spacer"></div>
+
     </div>
   </div>
 </div>
@@ -85,7 +96,6 @@ const frames = Array.from(document.querySelectorAll('.frame'));
 
 /* =========================
    3) 패널 연동: "변경 시 1회" + "요청 시 응답"
-   - 재시도/복구는 TOP(페이지2 통괄)에서만 담당
 ========================= */
 let currentVideoId = null;
 
@@ -95,23 +105,20 @@ function postTop(msg){
 
 function notify(videoId){
   if (!videoId || typeof videoId !== 'string') return;
-  if (videoId === currentVideoId) return; // ✅ 중복 방지
+  if (videoId === currentVideoId) return;
   currentVideoId = videoId;
   postTop({ type:'BARA_VIDEO_SELECT', videoId });
 }
 
-/* ✅ TOP이 상태를 요청하면 현재 선택을 1회 응답 */
 window.addEventListener('message', function(ev){
   const data = ev.data;
   if (!data || !data.type) return;
-
-  // ✅ 요청은 TOP에서만 받기 (다른 iframe/확장 스크립트 섞임 방지)
   if (ev.source !== window.top) return;
 
   if (data.type === 'BARA_REQUEST_STATE'){
-    // currentVideoId가 없으면 activeIndex 기반으로 산출
     if (!currentVideoId){
-      const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
+      const slide = swiper.slides[swiper.activeIndex];
+      const f = slide ? slide.querySelector('.frame') : null;
       if (f && f.dataset.video) currentVideoId = f.dataset.video;
     }
     if (currentVideoId){
@@ -121,7 +128,7 @@ window.addEventListener('message', function(ev){
   }
 }, true);
 
-/* ✅ player 준비 신호 (TOP이 복귀 타이밍 잡기 쉽게) */
+/* ✅ player 준비 신호 */
 function playerReady(){
   postTop({ type:'BARA_PLAYER_READY' });
 }
@@ -163,15 +170,23 @@ frames.forEach(f=>{
   }, { passive:true });
 });
 
-/* 슬라이드 변경 시도 중복 방지된 notify만 호출 */
+/* =========================
+   4.5) 슬라이드 변경 → frame 있는 슬라이드만 notify
+========================= */
 swiper.on('slideChange', ()=>{
-  const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
-  if(f && f.dataset.video) notify(f.dataset.video);
+  const slide = swiper.slides[swiper.activeIndex];
+  const f = slide ? slide.querySelector('.frame') : null;
+
+  // ✅ 빈 슬라이드면 아무 것도 보내지 않음(패널 유지)
+  if (!f || !f.dataset.video) return;
+
+  notify(f.dataset.video);
 });
 
 /* 최초 1회 상태 송신 */
 setTimeout(function(){
-  const f = swiper.slides[swiper.activeIndex]?.querySelector('.frame');
+  const slide = swiper.slides[swiper.activeIndex];
+  const f = slide ? slide.querySelector('.frame') : null;
   if(f && f.dataset.video) notify(f.dataset.video);
 }, 0);
 
