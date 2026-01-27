@@ -43,12 +43,17 @@
       padding: calc(var(--pad) * var(--ui-scale));
       box-sizing:border-box;
       background:transparent;
-      overflow:hidden;
 
+      /* 핵심: 줄바꿈 + 세로 스크롤 허용 */
+      overflow:auto;
       white-space:normal;
       overflow-wrap:anywhere;
       word-break:break-word;
+
+      /* 스크롤바 숨김 */
+      scrollbar-width:none;
     }
+    .root::-webkit-scrollbar{ width:0; height:0; }
 
     .mt-title{ margin-bottom: calc(var(--gap-s) * var(--ui-scale)); }
     .mt-sub{   margin-bottom: calc(var(--gap)   * var(--ui-scale)); }
@@ -114,18 +119,6 @@
 
   applyUiScale();
 
-  if (window.visualViewport){
-    window.visualViewport.addEventListener('resize', function(){
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          applyUiScale();
-          softRelayout();
-          readyBurst();
-        });
-      });
-    });
-  }
-
   window.addEventListener('resize', function(){
     applyUiScale();
     softRelayout();
@@ -135,18 +128,16 @@
     if (!document.hidden){
       applyUiScale();
       softRelayout();
-      readyBurst();
     }
   });
 
   window.addEventListener('pageshow', function(){
     applyUiScale();
     softRelayout();
-    readyBurst();
   });
 
   /* =========================
-     B) 텍스트 매핑 (중복/미등록 방지)
+     B) MICROCOSM 텍스트 매핑
   ========================= */
   const DATA = {
     'DRPC2Ba7i7E': {
@@ -176,7 +167,6 @@
   const descEl  = document.getElementById('mtDesc');
 
   function setDefault(){
-    if (!titleEl || !subEl || !descEl) return;
     titleEl.textContent = 'MICROCOSM';
     subEl.textContent   = '';
     descEl.textContent  = 'A compact study of sound, rhythm, and presence.';
@@ -186,15 +176,9 @@
   let currentVideoId = null;
 
   function apply(videoId){
-    if (!titleEl || !subEl || !descEl) return;
     if (!videoId || typeof videoId !== 'string') return;
-
     const d = DATA[videoId];
-
-    // ✅ DATA에 없는 값이면 무시 (default로 되돌리지 않음)
     if (!d) return;
-
-    // ✅ 같은 값이면 재적용하지 않음
     if (videoId === currentVideoId) return;
     currentVideoId = videoId;
 
@@ -207,16 +191,11 @@
   window.addEventListener('message', function(ev){
     const data = ev.data;
     if (!data || data.type !== 'BARA_VIDEO_SELECT') return;
-
-    // ✅ 환경별로 source가 top 또는 parent로 잡히는 케이스 모두 허용
-    const fromTopOrParent = (ev.source === window.top) || (ev.source === window.parent);
-    if (!fromTopOrParent) return;
-
     apply(data.videoId);
   }, true);
 
   /* =========================
-     C) READY 신호
+     C) READY
   ========================= */
   function ready(){
     try { window.top.postMessage({ type:'BARA_PANEL_READY' }, '*'); } catch(e){}
@@ -226,22 +205,16 @@
     ready();
     setTimeout(ready, 60);
     setTimeout(ready, 180);
-    setTimeout(ready, 420);
   }
 
   /* =========================
-     D) 초기 상태
+     D) 초기
   ========================= */
   setDefault();
   readyBurst();
   setTimeout(softRelayout, 0);
   setTimeout(softRelayout, 200);
 
-  window.addEventListener('load', function(){
-    readyBurst();
-    setTimeout(softRelayout, 0);
-    setTimeout(softRelayout, 200);
-  });
 })();
 </script>
 </body>
